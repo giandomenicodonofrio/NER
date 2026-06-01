@@ -13,7 +13,7 @@ Sono previsti due casi d'uso:
 - **modello specifico**: addestrato esclusivamente sul dominio Wikinews (WN).
 
 La relazione completa con analisi, scelte progettuali e risultati sperimentali
-si trova in [`RELAZIONE_TECNICA.md`](RELAZIONE_TECNICA.md).
+si trova in [`RelazioneTecnica.docx`](RelazioneTecnica.docx).
 
 ## Dataset
 
