@@ -1,0 +1,9 @@
+embedding:
+  name: glove_6b_300
+  path: embeddings/vec/glove_6b_300.vec
+  binary: false
+  dim: 300
+  lowercase_lookup: true
+  normalize_vectors: true
+  oov_strategy: random
+  oov_scale: 0.05

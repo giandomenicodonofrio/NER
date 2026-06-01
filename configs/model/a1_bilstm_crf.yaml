@@ -1,0 +1,17 @@
+model:
+  name: bilstm_crf
+
+  word_embedding_dim: 300
+  freeze_word_embeddings: false
+  word_dropout: 0.05
+
+  use_charcnn: false
+
+  lstm_hidden_dim: 256
+  lstm_num_layers: 1
+  lstm_dropout: 0.00
+  bidirectional: true
+
+  classifier_dropout: 0.30
+
+  use_crf: true

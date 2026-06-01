@@ -1,0 +1,47 @@
+experiment:
+  name: post_tuning_all_datasets_word_dropout_010
+  seed: 42
+  output_dir: outputs/post_tuning/post_tuning_all_datasets_word_dropout_010
+
+model_config: configs/model/final_charcnn_bilstm_crf_word_dropout_010.yaml
+embedding_config: configs/embeddings/final_nlpl_word2vec_it.yaml
+preprocessing_config: configs/preprocessing/p0_base.yaml
+
+data:
+  datasets:
+    ADG:
+      train: data/raw/ADG/ADG_train.tsv
+      dev: data/raw/ADG/ADG_dev.tsv
+      test: data/raw/ADG/ADG_test.tsv
+
+    FIC:
+      train: data/raw/FIC/FIC_train.tsv
+      dev: data/raw/FIC/FIC_dev.tsv
+      test: data/raw/FIC/FIC_test.tsv
+
+    WN:
+      train: data/raw/WN/WN_train.tsv
+      dev: data/raw/WN/WN_dev.tsv
+      test: data/raw/WN/WN_test.tsv
+
+  train_datasets: [ADG, FIC, WN]
+  dev_datasets: [ADG, FIC, WN]
+  test_datasets: [ADG, FIC, WN]
+
+training:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  optimizer: adamw
+  weight_decay: 0.0001
+  gradient_clip_norm: 5.0
+  early_stopping_patience: 8
+
+sampling:
+  strategy: random
+  shuffle: true
+
+evaluation:
+  report_by_dataset: true
+  save_predictions: true
+  save_confusion_matrix: true

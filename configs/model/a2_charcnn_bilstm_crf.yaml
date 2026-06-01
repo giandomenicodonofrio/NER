@@ -1,0 +1,22 @@
+model:
+  name: charcnn_bilstm_crf
+
+  word_embedding_dim: 300
+  freeze_word_embeddings: false
+  word_dropout: 0.05
+
+  use_charcnn: true
+
+  char_embedding_dim: 30
+  char_cnn_filters: 50
+  char_cnn_kernel_size: 3
+  char_dropout: 0.10
+
+  lstm_hidden_dim: 256
+  lstm_num_layers: 1
+  lstm_dropout: 0.00
+  bidirectional: true
+
+  classifier_dropout: 0.30
+
+  use_crf: true

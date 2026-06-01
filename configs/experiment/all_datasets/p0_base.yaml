@@ -1,0 +1,39 @@
+experiment:
+  name: all_datasets_p0_base
+  seed: 42
+  output_dir: outputs/all_datasets/p0_base
+
+model_config: configs/model/charcnn_bilstm_crf.yaml
+embedding_config: configs/embeddings/fasttext_wiki_it.yaml
+preprocessing_config: configs/preprocessing/p0_base.yaml
+
+data:
+  datasets:
+    ADG:
+      train: data/raw/ADG/ADG_train.tsv
+      dev: data/raw/ADG/ADG_dev.tsv
+      test: data/raw/ADG/ADG_test.tsv
+
+    FIC:
+      train: data/raw/FIC/FIC_train.tsv
+      dev: data/raw/FIC/FIC_dev.tsv
+      test: data/raw/FIC/FIC_test.tsv
+
+    WN:
+      train: data/raw/WN/WN_train.tsv
+      dev: data/raw/WN/WN_dev.tsv
+      test: data/raw/WN/WN_test.tsv
+      
+  train_datasets: [ADG, FIC, WN]
+  dev_datasets: [ADG, FIC, WN]
+  test_datasets: [ADG, FIC, WN]
+
+training:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  optimizer: adamw
+  weight_decay: 0.0001
+
+sampling:
+  strategy: balanced_by_dataset

@@ -1,0 +1,31 @@
+model:
+  name: final_charcnn_bilstm_crf_charcnn100
+
+  # Embeddings
+  freeze_word_embeddings: true
+  word_dropout: 0.05
+
+  # CharCNN
+  use_charcnn: true
+  char_embedding_dim: 50
+  char_cnn_filters: 100
+  char_cnn_kernel_size: 3
+  char_dropout: 0.10
+
+  # BiLSTM
+  lstm_hidden_dim: 256
+  lstm_num_layers: 1
+  lstm_dropout: 0.0
+  bidirectional: true
+
+  # Classifier
+  classifier_dropout: 0.30
+
+  # CRF
+  use_crf: true
+
+  # Weighted loss (disabled)
+  use_auxiliary_ce_loss: false
+  auxiliary_ce_weight: 0.1
+  o_loss_weight: 1.0
+  entity_loss_weight: 1.0

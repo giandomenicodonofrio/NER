@@ -1,0 +1,17 @@
+preprocessing:
+  lowercase_tokens: false
+
+  normalize_digits: true
+  digit_replacement: "0"
+
+  remove_stopwords: true
+  stopwords_path: resources/stopwords_it.txt
+
+  normalize_embeddings: true
+  center_embeddings: false
+
+  label_scheme: BIO
+  fix_malformed_i_tags: true
+
+  min_token_freq: 1
+  min_char_freq: 1

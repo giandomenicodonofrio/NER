@@ -1,0 +1,28 @@
+experiment:
+  name: wn_only_p1_normalized_embeddings
+  seed: 42
+  output_dir: outputs/wn_only/p1_normalized_embeddings
+
+model_config: configs/model/charcnn_bilstm_crf.yaml
+embedding_config: configs/embeddings/fasttext_wiki_it.yaml
+preprocessing_config: configs/preprocessing/p1_normalized_embeddings.yaml
+
+data:
+  datasets:
+      WN:
+        train: data/raw/WN/WN_train.tsv
+        dev: data/raw/WN/WN_dev.tsv
+        test: data/raw/WN/WN_test.tsv
+  train_datasets: [WN]
+  dev_datasets: [WN]
+  test_datasets: [WN]
+
+training:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  optimizer: adamw
+  weight_decay: 0.0001
+
+sampling:
+  strategy: random

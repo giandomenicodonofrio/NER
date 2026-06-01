@@ -1,0 +1,9 @@
+embedding:
+  name: fasttext_wiki_it
+  path: embeddings/vec/fasttext_wiki_it.vec
+  binary: false
+  dim: 300
+  lowercase_lookup: true
+  normalize_vectors: true
+  oov_strategy: random
+  oov_scale: 0.05
