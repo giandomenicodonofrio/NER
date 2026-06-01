@@ -211,6 +211,7 @@ class Trainer:
             loss = self.model(
                 token_ids=batch["token_ids"],
                 char_ids=batch["char_ids"],
+                char_mask=batch["char_mask"],
                 mask=batch["mask"],
                 labels=batch["label_ids"],
             )
@@ -258,6 +259,7 @@ class Trainer:
             predictions = self.model.decode(
                 token_ids=batch["token_ids"],
                 char_ids=batch["char_ids"],
+                char_mask=batch["char_mask"],
                 mask=batch["mask"],
             )
 

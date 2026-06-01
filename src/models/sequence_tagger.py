@@ -2,6 +2,7 @@
 
 import torch
 import torch.nn as nn
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torchcrf import CRF
 
 
@@ -19,6 +20,9 @@ class CharCNNEncoder(nn.Module):
     ):
         super().__init__()
 
+        if kernel_size % 2 == 0:
+            raise ValueError("CharCNN kernel_size must be odd to preserve word length")
+
         self.char_embedding = nn.Embedding(
             num_embeddings=num_chars,
             embedding_dim=char_embedding_dim,
@@ -35,12 +39,18 @@ class CharCNNEncoder(nn.Module):
         self.activation = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, char_ids: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        char_ids: torch.Tensor,
+        char_mask: torch.Tensor,
+    ) -> torch.Tensor:
         """Encode ``[batch, sequence, characters]`` into token features.
         """
         batch_size, seq_len, max_word_len = char_ids.shape
 
-        x = char_ids.view(batch_size * seq_len, max_word_len)
+        x = char_ids.reshape(batch_size * seq_len, max_word_len)
+        flat_mask = char_mask.reshape(batch_size * seq_len, max_word_len)
+
         x = self.char_embedding(x)
         x = self.dropout(x)
 
@@ -48,8 +58,16 @@ class CharCNNEncoder(nn.Module):
         x = self.conv(x)
         x = self.activation(x)
 
+        x = x.masked_fill(
+            ~flat_mask.unsqueeze(1),
+            torch.finfo(x.dtype).min,
+        )
         x = torch.max(x, dim=2).values
-        x = x.view(batch_size, seq_len, -1)
+
+        # Fully padded tokens have no valid character to pool.
+        has_chars = flat_mask.any(dim=1, keepdim=True)
+        x = torch.where(has_chars, x, torch.zeros_like(x))
+        x = x.reshape(batch_size, seq_len, -1)
 
         return x
 
@@ -145,6 +163,8 @@ class SequenceTagger(nn.Module):
         self,
         token_ids: torch.Tensor,
         char_ids: torch.Tensor,
+        char_mask: torch.Tensor,
+        mask: torch.Tensor,
     ) -> torch.Tensor:
         """Compute one unnormalized label score per token.
         """
@@ -152,12 +172,24 @@ class SequenceTagger(nn.Module):
         word_repr = self.word_dropout(word_repr)
 
         if self.use_charcnn:
-            char_repr = self.char_encoder(char_ids)
+            char_repr = self.char_encoder(char_ids, char_mask)
             x = torch.cat([word_repr, char_repr], dim=-1)
         else:
             x = word_repr
 
-        lstm_out, _ = self.bilstm(x)
+        lengths = mask.sum(dim=1).detach().cpu()
+        packed_x = pack_padded_sequence(
+            x,
+            lengths=lengths,
+            batch_first=True,
+            enforce_sorted=False,
+        )
+        packed_out, _ = self.bilstm(packed_x)
+        lstm_out, _ = pad_packed_sequence(
+            packed_out,
+            batch_first=True,
+            total_length=token_ids.size(1),
+        )
         lstm_out = self.classifier_dropout(lstm_out)
 
         emissions = self.emission_layer(lstm_out)
@@ -167,6 +199,7 @@ class SequenceTagger(nn.Module):
         self,
         token_ids: torch.Tensor,
         char_ids: torch.Tensor,
+        char_mask: torch.Tensor,
         mask: torch.Tensor,
         labels: torch.Tensor | None = None,
     ):
@@ -177,7 +210,7 @@ class SequenceTagger(nn.Module):
         emissions. Without CRF, weighted cross-entropy is the only objective.
         Label id zero is expected to represent ``O``.
         """
-        emissions = self._compute_emissions(token_ids, char_ids)
+        emissions = self._compute_emissions(token_ids, char_ids, char_mask, mask)
         if labels is not None:
             active_logits = emissions[mask]
             active_labels = labels[mask]
@@ -216,10 +249,11 @@ class SequenceTagger(nn.Module):
         self,
         token_ids: torch.Tensor,
         char_ids: torch.Tensor,
+        char_mask: torch.Tensor,
         mask: torch.Tensor,
     ) -> list[list[int]]:
         """Decode variable-length label sequences, excluding token padding."""
-        emissions = self._compute_emissions(token_ids, char_ids)
+        emissions = self._compute_emissions(token_ids, char_ids, char_mask, mask)
 
         if self.use_crf:
             return self.crf.decode(emissions, mask=mask)

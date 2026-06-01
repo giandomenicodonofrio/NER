@@ -56,9 +56,9 @@ from pathlib import Path
 
 # Default sequence. Prefer ``--only`` for ad-hoc runs; all available configs are
 # grouped by experimental phase under ``configs/experiment``.
-EXPERIMENTS = [
-    "configs/experiment/post_tuning/post_tuning_all_datasets_word_dropout_010.yaml",
-]
+# EXPERIMENTS = [
+#     "configs/experiment/post_tuning/post_tuning_all_datasets_word_dropout_010.yaml",
+# ]
 
 
 
