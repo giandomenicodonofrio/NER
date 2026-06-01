@@ -1,3 +1,5 @@
+"""Training loop, checkpoint selection and evaluation orchestration."""
+
 from pathlib import Path
 import json
 
@@ -18,6 +20,7 @@ from src.evaluation.metrics import (
 
 
 def move_batch_to_device(batch: dict, device: torch.device) -> dict:
+    """Move tensors to the target device while preserving textual metadata."""
     moved = {}
 
     for key, value in batch.items():
@@ -97,6 +100,8 @@ def token_level_scores(y_true, y_pred, o_label_id: int = 0) -> dict:
 
 
 class Trainer:
+    """Train a tagger and select its best checkpoint using development F1."""
+
     def __init__(
         self,
         model,
@@ -142,6 +147,7 @@ class Trainer:
         self.bad_epochs = 0
 
     def train(self):
+        """Train until all epochs run or development F1 stops improving."""
         history = []
 
         for epoch in range(1, self.epochs + 1):
@@ -165,6 +171,7 @@ class Trainer:
             )
 
             if score > self.best_score:
+                # Keep model selection isolated from the held-out test split.
                 self.best_score = score
                 self.best_epoch = epoch
                 self.bad_epochs = 0
@@ -184,6 +191,7 @@ class Trainer:
         return history
 
     def train_one_epoch(self, epoch: int) -> float:
+        """Run one optimization epoch and return the mean batch loss."""
         self.model.train()
 
         total_loss = 0.0
@@ -226,6 +234,12 @@ class Trainer:
 
     @torch.no_grad()
     def evaluate(self, split: str = "dev", save_outputs: bool = False) -> dict:
+        """Compute entity-level metrics and optionally persist diagnostics.
+
+        Saved diagnostics include aggregate and per-domain metrics, a seqeval
+        classification report, token-level predictions, errors and confusion
+        matrices. Text metadata stays on CPU and is used only when exporting.
+        """
         self.model.eval()
 
         all_gold_ids = []

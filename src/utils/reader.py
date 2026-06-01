@@ -1,3 +1,5 @@
+"""Read KIND-style TSV files while preserving sentence and domain metadata."""
+
 from pathlib import Path
 from dataclasses import dataclass
 from src.preprocessing.tokens import normalize_token
@@ -5,6 +7,8 @@ from src.preprocessing.tokens import normalize_token
 
 @dataclass
 class Sentence:
+    """One tokenized sentence before conversion to numeric ids."""
+
     tokens: list[str]
     labels: list[str]
     dataset: str
@@ -17,6 +21,12 @@ def read_ner_tsv(
     config: dict,
     has_labels: bool = True,
 ) -> list[Sentence]:
+    """Read a TSV split where blank lines delimit sentences.
+
+    The reader keeps the originating dataset name because the same pipeline is
+    used for domain-specific metrics and for balanced multi-domain sampling.
+    Unlabelled files can be loaded by assigning the neutral ``O`` label.
+    """
     path = Path(path)
 
     if not path.exists():
@@ -78,6 +88,7 @@ def load_datasets_split(
     config: dict,
     split: str,
 ) -> list[Sentence]:
+    """Concatenate the datasets configured for one split."""
     all_sentences: list[Sentence] = []
 
     dataset_names = config["data"][f"{split}_datasets"]

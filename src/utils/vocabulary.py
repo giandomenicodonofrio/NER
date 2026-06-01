@@ -1,3 +1,5 @@
+"""Build the vocabularies shared by dataset encoding and model decoding."""
+
 from collections import Counter
 from dataclasses import dataclass
 from src.utils.reader import Sentence
@@ -9,6 +11,8 @@ UNK_TOKEN = "<UNK>"
 
 @dataclass
 class Vocabulary:
+    """Bidirectional mapping between textual items and integer ids."""
+
     stoi: dict[str, int]
     itos: list[str]
 
@@ -26,6 +30,7 @@ def build_token_vocab(
     sentences: list[Sentence],
     min_freq: int = 1,
 ) -> Vocabulary:
+    """Build the token vocabulary from training sentences."""
     counter = Counter()
 
     for sentence in sentences:
@@ -45,6 +50,7 @@ def build_char_vocab(
     sentences: list[Sentence],
     min_freq: int = 1,
 ) -> Vocabulary:
+    """Build the character vocabulary used by the CharCNN branch."""
     counter = Counter()
 
     for sentence in sentences:
@@ -62,6 +68,11 @@ def build_char_vocab(
 
 
 def build_label_vocab(sentences: list[Sentence]) -> Vocabulary:
+    """Build the output vocabulary, keeping ``O`` at index zero.
+
+    ``SequenceTagger`` relies on this invariant when it optionally assigns a
+    different auxiliary loss weight to entity tokens and non-entity tokens.
+    """
     labels = sorted({label for sentence in sentences for label in sentence.labels})
 
     if "O" in labels:
@@ -73,6 +84,7 @@ def build_label_vocab(sentences: list[Sentence]) -> Vocabulary:
 
 
 def build_dataset_vocab(sentences: list[Sentence]) -> Vocabulary:
+    """Map domain names such as ADG, FIC and WN to ids."""
     datasets = sorted({sentence.dataset for sentence in sentences})
     stoi = {name: idx for idx, name in enumerate(datasets)}
     return Vocabulary(stoi=stoi, itos=datasets)

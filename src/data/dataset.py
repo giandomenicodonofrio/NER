@@ -1,3 +1,5 @@
+"""Encode NER sentences and pad them into batches consumable by the model."""
+
 from dataclasses import dataclass
 
 import torch
@@ -9,6 +11,8 @@ from src.utils.vocabulary import Vocabulary
 
 @dataclass
 class EncodedSentence:
+    """A sentence after preprocessing and vocabulary lookup."""
+
     token_ids: list[int]
     char_ids: list[list[int]]
     label_ids: list[int]
@@ -19,6 +23,12 @@ class EncodedSentence:
 
 
 class NERDataset(Dataset):
+    """Materialize encoded sentences for one train, dev or test split.
+
+    Encoding is performed once during initialization. This keeps data loading
+    simple and makes preprocessing identical across epochs.
+    """
+
     def __init__(
         self,
         sentences: list[Sentence],
@@ -48,6 +58,7 @@ class NERDataset(Dataset):
         return self.encoded[idx]
 
     def encode_sentence(self, sentence: Sentence) -> EncodedSentence:
+        """Apply sequence-level preprocessing and convert symbols to ids."""
         tokens = []
         labels = []
 
@@ -55,6 +66,8 @@ class NERDataset(Dataset):
             if self.remove_stopwords and token.lower() in self.stopwords:
                 continue
 
+            # Removing the first token of an entity can expose an orphan I-*.
+            # Promote it to B-* so the filtered sequence remains valid BIO.
             if self.fix_malformed_i_tags and label.startswith("I-"):
                 entity_type = label[2:]
                 valid_previous_labels = {
@@ -69,6 +82,7 @@ class NERDataset(Dataset):
             labels.append(label)
 
         if not tokens:
+            # Keep every source sentence representable after aggressive filters.
             tokens = ["<EMPTY>"]
             labels = ["O"]
 
@@ -94,6 +108,12 @@ class NERDataset(Dataset):
 
 
 def collate_ner_batch(batch: list[EncodedSentence]) -> dict[str, torch.Tensor | list]:
+    """Pad variable-length sentences and words to rectangular tensors.
+
+    ``mask`` identifies real tokens for CRF loss, decoding and evaluation.
+    ``char_mask`` identifies real characters. It is returned explicitly so the
+    CharCNN pooling step can be made padding-aware.
+    """
     batch_size = len(batch)
     max_seq_len = max(len(item.token_ids) for item in batch)
     max_word_len = max(

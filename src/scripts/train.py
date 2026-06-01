@@ -1,3 +1,5 @@
+"""Command-line entry point for one configured training or evaluation run."""
+
 import argparse
 import json
 from pathlib import Path
@@ -13,6 +15,7 @@ from src.training.trainer import Trainer
 
 
 def save_vocabs(vocabs: dict, output_dir: Path) -> None:
+    """Persist vocabularies so model outputs can be inspected after training."""
     vocab_dir = output_dir / "vocabs"
     vocab_dir.mkdir(parents=True, exist_ok=True)
 
@@ -31,6 +34,7 @@ def save_vocabs(vocabs: dict, output_dir: Path) -> None:
 
 
 def save_config(config: dict, output_dir: Path) -> None:
+    """Persist the fully merged config used by the current experiment."""
     path = output_dir / "config_resolved.json"
     with path.open("w", encoding="utf-8") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)

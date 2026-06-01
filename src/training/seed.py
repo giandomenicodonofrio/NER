@@ -1,9 +1,12 @@
+"""Reproducibility helpers for experiment runs."""
+
 import random
 import numpy as np
 import torch
 
 
 def set_seed(seed: int = 42) -> None:
+    """Seed Python, NumPy and PyTorch and prefer deterministic CUDA kernels."""
     random.seed(seed)
     np.random.seed(seed)
 

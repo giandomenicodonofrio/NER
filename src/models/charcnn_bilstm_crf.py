@@ -1,3 +1,9 @@
+"""Legacy fixed CharCNN-BiLSTM-CRF model kept for earlier experiments.
+
+The active training entry point uses ``SequenceTagger`` because that model can
+also disable CharCNN or CRF for architecture ablations.
+"""
+
 import torch
 import torch.nn as nn
 from torchcrf  import CRF

@@ -1,3 +1,5 @@
+"""Build datasets, vocabularies and dataloaders from an experiment config."""
+
 import torch
 from torch.utils.data import DataLoader, WeightedRandomSampler
 
@@ -14,6 +16,12 @@ from src.utils.vocabulary import (
 )
 
 def build_dataset_balanced_sampler(dataset):
+    """Sample domains uniformly while preserving the epoch length.
+
+    Each sentence receives the inverse frequency of its source domain. With
+    replacement enabled, the sampler draws the same number of examples as a
+    normal epoch but prevents the largest domain from dominating training.
+    """
     dataset_names = [item.dataset for item in dataset.encoded]
 
     counts = Counter(dataset_names)
@@ -32,6 +40,7 @@ def build_dataset_balanced_sampler(dataset):
     return sampler
 
 def load_stopwords(path: str | None) -> set[str]:
+    """Load one lowercase stopword per line, ignoring blank lines and comments."""
     if path is None:
         return set()
 
@@ -49,6 +58,13 @@ def load_stopwords(path: str | None) -> set[str]:
 
 
 def build_datasets_and_vocabs(config: dict):
+    """Construct encoded splits and the vocabularies shared by all splits.
+
+    Token, character and label vocabularies are learned only from training
+    sentences to avoid lexical leakage from dev and test. The dataset vocabulary
+    may inspect every split because domain ids are metadata used for reporting
+    and sampling, not model features.
+    """
     preprocessing = config.get("preprocessing", {})
     remove_stopwords = preprocessing.get("remove_stopwords", False)
     stopwords_path = preprocessing.get("stopwords_path")
@@ -126,6 +142,7 @@ def build_datasets_and_vocabs(config: dict):
 
 
 def build_dataloaders(config: dict, datasets: dict):
+    """Create loaders and apply the configured training sampling strategy."""
     training = config.get("training", {})
     sampling = config.get("sampling", {})
 
@@ -136,6 +153,7 @@ def build_dataloaders(config: dict, datasets: dict):
 
     if sampling_strategy == "balanced_by_dataset":
         train_sampler = build_dataset_balanced_sampler(datasets["train"])
+        # PyTorch does not allow shuffle and sampler to be active together.
         train_shuffle = False
     else:
         train_sampler = None

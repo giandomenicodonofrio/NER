@@ -1,9 +1,13 @@
+"""Configurable sequence tagger used by the architecture ablations."""
+
 import torch
 import torch.nn as nn
 from torchcrf import CRF
 
 
 class CharCNNEncoder(nn.Module):
+    """Extract one fixed-size morphological representation for each token."""
+
     def __init__(
         self,
         num_chars: int,
@@ -32,6 +36,8 @@ class CharCNNEncoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, char_ids: torch.Tensor) -> torch.Tensor:
+        """Encode ``[batch, sequence, characters]`` into token features.
+        """
         batch_size, seq_len, max_word_len = char_ids.shape
 
         x = char_ids.view(batch_size * seq_len, max_word_len)
@@ -49,6 +55,12 @@ class CharCNNEncoder(nn.Module):
 
 
 class SequenceTagger(nn.Module):
+    """Compose word embeddings, optional CharCNN, BiLSTM and optional CRF.
+
+    The flags ``use_charcnn`` and ``use_crf`` make the same implementation
+    support the A0, A1 and A2 architecture ablations.
+    """
+
     def __init__(
         self,
         embedding_matrix: torch.Tensor,
@@ -134,6 +146,8 @@ class SequenceTagger(nn.Module):
         token_ids: torch.Tensor,
         char_ids: torch.Tensor,
     ) -> torch.Tensor:
+        """Compute one unnormalized label score per token.
+        """
         word_repr = self.word_embedding(token_ids)
         word_repr = self.word_dropout(word_repr)
 
@@ -156,6 +170,13 @@ class SequenceTagger(nn.Module):
         mask: torch.Tensor,
         labels: torch.Tensor | None = None,
     ):
+        """Compute the training loss for a padded batch.
+
+        With CRF enabled, the main objective is negative log-likelihood. An
+        optional weighted cross-entropy term can be added to emphasize entity
+        emissions. Without CRF, weighted cross-entropy is the only objective.
+        Label id zero is expected to represent ``O``.
+        """
         emissions = self._compute_emissions(token_ids, char_ids)
         if labels is not None:
             active_logits = emissions[mask]
@@ -191,28 +212,13 @@ class SequenceTagger(nn.Module):
 
             return weighted_ce_loss
 
-        # if labels is not None:
-        #     if self.use_crf:
-        #         log_likelihood = self.crf(
-        #             emissions=emissions,
-        #             tags=labels,
-        #             mask=mask,
-        #             reduction="mean",
-        #         )
-        #         return -log_likelihood
-
-        #     active_logits = emissions[mask]
-        #     active_labels = labels[mask]
-        #     return self.loss_fn(active_logits, active_labels)
-
-        # return self.decode(token_ids, char_ids, mask)
-
     def decode(
         self,
         token_ids: torch.Tensor,
         char_ids: torch.Tensor,
         mask: torch.Tensor,
     ) -> list[list[int]]:
+        """Decode variable-length label sequences, excluding token padding."""
         emissions = self._compute_emissions(token_ids, char_ids)
 
         if self.use_crf:

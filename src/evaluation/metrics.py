@@ -1,3 +1,5 @@
+"""Compute NER metrics and persist evaluation diagnostics."""
+
 from pathlib import Path
 import json
 
@@ -10,6 +12,7 @@ from sklearn.metrics import confusion_matrix
 
 
 def ids_to_labels(sequences, label_vocab):
+    """Decode numeric model outputs into BIO label sequences."""
     return [
         [label_vocab.itos[idx] for idx in seq]
         for seq in sequences
@@ -17,6 +20,7 @@ def ids_to_labels(sequences, label_vocab):
 
 
 def compute_entity_metrics(y_true_labels, y_pred_labels) -> dict:
+    """Compute span-level NER metrics using seqeval's BIO interpretation."""
     return {
         "entity_precision": precision_score(y_true_labels, y_pred_labels),
         "entity_recall": recall_score(y_true_labels, y_pred_labels),
@@ -31,6 +35,11 @@ def compute_entity_metrics(y_true_labels, y_pred_labels) -> dict:
 
 
 def compute_token_accuracy(y_true_labels, y_pred_labels) -> float:
+    """Compute token accuracy as a secondary metric.
+
+    Entity-level F1 remains the primary selection metric because the frequent
+    ``O`` label can make token accuracy look strong even for weak NER models.
+    """
     correct = 0
     total = 0
 
@@ -124,6 +133,11 @@ def save_confusion_matrix(
     labels,
     output_dir: str | Path,
 ):
+    """Save raw and normalized token-level confusion matrices.
+
+    These matrices diagnose label confusions but do not replace span-level
+    seqeval metrics, which remain the primary NER evaluation.
+    """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -201,6 +215,7 @@ def compute_metrics_by_dataset(
     y_pred_labels,
     datasets,
 ) -> dict:
+    """Compute the same metrics separately for each source domain."""
     grouped = {}
 
     for token_seq, gold_seq, pred_seq, dataset in zip(

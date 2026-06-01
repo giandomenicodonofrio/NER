@@ -1,3 +1,5 @@
+"""Load pretrained vectors and align them with the experiment vocabulary."""
+
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +9,7 @@ from src.utils.vocabulary import Vocabulary, PAD_TOKEN
 
 
 def l2_normalize_matrix(matrix: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+    """Normalize each row independently while keeping zero rows stable."""
     norms = np.linalg.norm(matrix, axis=1, keepdims=True)
     return matrix / np.maximum(norms, eps)
 
@@ -81,6 +84,13 @@ def build_embedding_matrix(
     embedding_config: dict,
     preprocessing_config: dict,
 ) -> torch.Tensor:
+    """Build the word-embedding matrix indexed exactly like ``token_vocab``.
+
+    Known tokens reuse pretrained vectors. Missing tokens receive either a
+    deterministic random vector or a zero vector according to the embedding
+    config. Centering and L2 normalization exclude ``<PAD>`` because padding
+    must remain the all-zero vector consumed by ``nn.Embedding``.
+    """
     embedding_cfg = embedding_config.get("embedding", embedding_config)
     preprocessing = preprocessing_config.get("preprocessing", preprocessing_config)
 
@@ -102,6 +112,7 @@ def build_embedding_matrix(
 
     matrix = np.zeros((len(token_vocab), dim), dtype=np.float32)
 
+    # Fixed initialization keeps OOV vectors comparable across experiments.
     rng = np.random.default_rng(42)
 
     found = 0
@@ -146,6 +157,7 @@ def build_embedding_matrix(
         matrix[non_pad_mask] = l2_normalize_matrix(matrix[non_pad_mask])
 
     pad_idx = token_vocab.stoi[PAD_TOKEN]
+    # Re-apply the invariant after optional centering and normalization.
     matrix[pad_idx] = np.zeros(dim, dtype=np.float32)
 
     coverage = found / max(found + missing, 1)

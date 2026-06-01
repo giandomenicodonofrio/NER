@@ -1,3 +1,5 @@
+"""Evaluate the selected generalist and WN-specific checkpoints uniformly."""
+
 from pathlib import Path
 import sys
 
@@ -54,6 +56,11 @@ ALL_TEST_DATASETS = {
 
 
 def patch_config_for_all_tests(config: dict, output_dir: str) -> dict:
+    """Evaluate every selected checkpoint on the same three test domains.
+
+    A WN-specific checkpoint is still evaluated on ADG and FIC to quantify how
+    much domain specialization affects cross-domain generalization.
+    """
     config["experiment"]["output_dir"] = output_dir
 
     config["data"]["datasets"] = ALL_TEST_DATASETS
@@ -63,6 +70,7 @@ def patch_config_for_all_tests(config: dict, output_dir: str) -> dict:
 
 
 def evaluate_model(eval_cfg: dict, device: str | None = None) -> list[dict]:
+    """Load one checkpoint, export diagnostics and return comparison rows."""
     config = load_experiment_config(eval_cfg["config"])
     config = patch_config_for_all_tests(config, eval_cfg["output_dir"])
 
@@ -169,4 +177,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()
