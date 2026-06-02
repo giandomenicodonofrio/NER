@@ -90,8 +90,8 @@ def main():
         filename="freeze_vs_finetune.png",
     )
 
-    # 4. Modelli finali
-    final_models = pd.DataFrame(
+    # 4. Error analysis
+    ea_models = pd.DataFrame(
         {
             "Model": [
                 "WN-only",
@@ -102,11 +102,11 @@ def main():
     )
 
     save_barplot(
-        final_models,
+        ea_models,
         x="Model",
         y="F1",
-        title="Final Models - F1 Score",
-        filename="final_models.png",
+        title="Error Analysis - F1 Score",
+        filename="error_analysis.png",
     )
 
     # 5. Generalista per dataset
