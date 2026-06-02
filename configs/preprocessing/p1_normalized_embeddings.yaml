@@ -10,7 +10,7 @@ preprocessing:
   center_embeddings: false
 
   label_scheme: BIO
-  fix_malformed_i_tags: true
+  fix_malformed_i_tags: false
   
   min_token_freq: 1
   min_char_freq: 1

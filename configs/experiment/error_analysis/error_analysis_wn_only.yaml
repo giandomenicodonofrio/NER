@@ -1,7 +1,9 @@
+# Snapshot used to export predictions for error analysis.
+# The selected WN experiment lives under configs/experiment/tuning.
 experiment:
-  name: final_wn_only
+  name: error_analysis_wn_only
   seed: 42
-  output_dir: outputs/final/final_wn_only
+  output_dir: outputs/error_analysis/error_analysis_wn_only
 
 model_config: configs/model/final_charcnn_bilstm_crf.yaml
 embedding_config: configs/embeddings/final_nlpl_word2vec_it.yaml

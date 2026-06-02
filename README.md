@@ -99,12 +99,15 @@ Il flusso principale di training esegue questi passaggi:
 3. normalizza i token e applica l'eventuale rimozione delle stopword;
 4. costruisce i vocabolari di token, caratteri, label e dataset;
 5. carica gli embedding testuali e costruisce la matrice iniziale;
-6. addestra il modello con `AdamW`, gradient clipping ed early stopping sul
-   valore F1 del development set;
+6. addestra il modello con `AdamW`, gradient clipping ed early stopping sulla
+   macro-F1 token-level NERMuD del development set;
 7. salva il checkpoint migliore;
 8. valuta il checkpoint e genera metriche, predizioni e matrici di confusione.
 
-Le metriche entity-level sono calcolate con `seqeval`:
+La metrica primaria segue lo scorer ufficiale NERMuD: rimuove i prefissi BIO e
+calcola macro precision, macro recall e macro F1 token-level sulle classi `PER`,
+`LOC` e `ORG`. Vengono salvate anche la micro-F1 NERMuD e le metriche
+entity-level calcolate con `seqeval`:
 
 - precision;
 - recall;
@@ -144,8 +147,8 @@ Le configurazioni degli esperimenti si trovano in
 | `freeze/` | confronto tra embedding congelati e fine-tuning |
 | `balancing/` | sampling bilanciato per dataset |
 | `tuning/` | tuning degli iperparametri |
-| `post_tuning/` | modello generalista dopo il tuning |
-| `final/` | configurazioni finali di riferimento |
+| `post_tuning/` | modello generalista selezionato dopo il tuning |
+| `error_analysis/` | snapshot storici usati per l'analisi degli errori |
 
 Ogni configurazione di esperimento compone tre file:
 
@@ -178,16 +181,17 @@ Il confronto finale è definito in
 | generalista | `ADG`, `FIC`, `WN` | test set completo |
 | specifico | `WN` | test set completo con dettaglio sul dominio `WN` |
 
-La relazione tecnica registra il seguente snapshot sperimentale:
+La relazione tecnica registra il seguente snapshot sperimentale storico:
 
 | Modello | Precision | Recall | F1 |
 | --- | ---: | ---: | ---: |
 | generalista | 0.7977 | 0.7785 | 0.7880 |
 | specifico su WN | 0.7958 | 0.7913 | 0.7935 |
 
-Questi valori descrivono gli artefatti prodotti durante lo sviluppo. Prima di
-usarli come benchmark definitivo è necessario rigenerare gli esperimenti dopo
-aver risolto le limitazioni elencate nelle note metodologiche.
+Questi valori descrivono gli artefatti prodotti durante lo sviluppo con la
+precedente metrica entity-level. Non sono risultati NERMuD ufficiali: prima di
+usarli come benchmark è necessario rigenerare gli esperimenti con lo scorer
+attuale.
 
 ## Requisiti
 
@@ -249,8 +253,8 @@ uv run python -m src.scripts.train --config configs/experiment/tuning/tuning_wn_
 ```
 
 Lo script [`main.py`](main.py) consente anche di eseguire una sequenza di
-esperimenti. La lista predefinita è definita nella variabile `EXPERIMENTS`, ma
-può essere sovrascritta senza modificare il file:
+esperimenti. La variabile `EXPERIMENTS` è vuota per impostazione predefinita:
+la sequenza da eseguire viene passata con `--only`, senza modificare il file:
 
 ```powershell
 uv run python main.py --only configs/experiment/architecture/wn_a0_bilstm_softmax.yaml configs/experiment/architecture/wn_a1_bilstm_crf.yaml configs/experiment/architecture/wn_a2_charcnn_bilstm_crf.yaml
@@ -300,6 +304,18 @@ Confronto tra sampling casuale e bilanciato:
 uv run python -m src.scripts.compare_sampling
 ```
 
+Analisi degli errori sullo snapshot `error_analysis`:
+
+```powershell
+uv run python -m src.scripts.error_analysis
+```
+
+Per analizzare un altro output:
+
+```powershell
+uv run python -m src.scripts.error_analysis --predictions outputs/post_tuning/post_tuning_all_datasets_word_dropout_010/predictions/test_errors.tsv --out-dir outputs/analysis/error_analysis/post_tuning
+```
+
 Generazione dei grafici della relazione:
 
 ```powershell
@@ -320,7 +336,8 @@ outputs/<gruppo>/<esperimento>/
 |   |-- history.json
 |   |-- test_metrics.json
 |   |-- test_metrics_by_dataset.json
-|   `-- test_classification_report.json
+|   |-- test_classification_report.json
+|   `-- test_span_classification_report.json
 |-- predictions/
 |   |-- test_predictions.tsv
 |   `-- test_errors.tsv

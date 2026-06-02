@@ -37,9 +37,9 @@ from pathlib import Path
 #     "configs/experiment/freeze/wn_nlpl_frozen.yaml",
 # ]
 
-# EXPERIMENTS = [ # final experiments for error analysis
-#     "configs/experiment/final/final_all_datasets.yaml",
-#     "configs/experiment/final/final_wn_only.yaml",
+# EXPERIMENTS = [ # experiments for error analysis
+#     "configs/experiment/error_analysis/error_analysis_all_datasets.yaml",
+#     "configs/experiment/error_analysis/error_analysis_wn_only.yaml",
 # ]
 
 # EXPERIMENTS = [ # experiments for comparison of random vs balanced sampling
@@ -56,9 +56,7 @@ from pathlib import Path
 
 # Default sequence. Prefer ``--only`` for ad-hoc runs; all available configs are
 # grouped by experimental phase under ``configs/experiment``.
-# EXPERIMENTS = [
-#     "configs/experiment/post_tuning/post_tuning_all_datasets_word_dropout_010.yaml",
-# ]
+EXPERIMENTS = []
 
 
 
@@ -80,10 +78,13 @@ def run_experiment(config_path: str, device: str | None = None, eval_only: bool 
 
     env = os.environ.copy()
 
-    project_root = Path(__file__).resolve().parents[3]
-    src_path = project_root / "src"
-
-    env["PYTHONPATH"] = str(src_path)
+    project_root = Path(__file__).resolve().parent
+    previous_pythonpath = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = os.pathsep.join(
+        path
+        for path in [str(project_root), previous_pythonpath]
+        if path
+    )
 
     print("\n" + "=" * 80)
     print(f"Running experiment: {config_path}")
@@ -110,6 +111,9 @@ def main():
 
     if args.only:
         experiments = args.only
+
+    if not experiments:
+        parser.error("No experiments selected. Pass one or more configs with --only.")
 
     if args.start_from:
         if args.start_from not in experiments:
