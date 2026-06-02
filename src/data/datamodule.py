@@ -85,7 +85,12 @@ def build_datasets_and_vocabs(config: dict):
 
     min_token_freq = preprocessing.get("min_token_freq", 1)
     min_char_freq = preprocessing.get("min_char_freq", 1)
-    fix_malformed_i_tags = preprocessing.get("fix_malformed_i_tags", False)
+    # BIO repair is only a consequence of token removal. Preserve source gold
+    # labels unchanged for the baseline, development and held-out test data.
+    fix_malformed_i_tags = (
+        remove_stopwords
+        and preprocessing.get("fix_malformed_i_tags", False)
+    )
 
     token_vocab = build_token_vocab(train_sentences, min_freq=min_token_freq)
     char_vocab = build_char_vocab(train_sentences, min_freq=min_char_freq)

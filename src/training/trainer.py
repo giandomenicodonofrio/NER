@@ -10,6 +10,7 @@ from tqdm import tqdm
 from src.evaluation.metrics import (
     ids_to_labels,
     compute_entity_metrics,
+    compute_nermud_metrics,
     compute_token_accuracy,
     save_json,
     save_predictions_tsv,
@@ -154,7 +155,7 @@ class Trainer:
             train_loss = self.train_one_epoch(epoch)
             dev_metrics = self.evaluate(split="dev")
 
-            score = dev_metrics["f1"]
+            score = dev_metrics["nermud_macro_f1"]
 
             row = {
                 "epoch": epoch,
@@ -283,13 +284,25 @@ class Trainer:
         y_true_labels = ids_to_labels(all_gold_ids, self.label_vocab)
         y_pred_labels = ids_to_labels(all_pred_ids, self.label_vocab)
 
+        nermud_metrics = compute_nermud_metrics(y_true_labels, y_pred_labels)
         entity_metrics = compute_entity_metrics(y_true_labels, y_pred_labels)
         token_accuracy = compute_token_accuracy(y_true_labels, y_pred_labels)
 
         metrics = {
-            "precision": entity_metrics["entity_precision"],
-            "recall": entity_metrics["entity_recall"],
-            "f1": entity_metrics["entity_f1"],
+            # Keep the short aliases for comparison scripts. They now represent
+            # the official NERMuD macro-average token-level metrics.
+            "precision": nermud_metrics["nermud_macro_precision"],
+            "recall": nermud_metrics["nermud_macro_recall"],
+            "f1": nermud_metrics["nermud_macro_f1"],
+            "nermud_macro_precision": nermud_metrics["nermud_macro_precision"],
+            "nermud_macro_recall": nermud_metrics["nermud_macro_recall"],
+            "nermud_macro_f1": nermud_metrics["nermud_macro_f1"],
+            "nermud_micro_precision": nermud_metrics["nermud_micro_precision"],
+            "nermud_micro_recall": nermud_metrics["nermud_micro_recall"],
+            "nermud_micro_f1": nermud_metrics["nermud_micro_f1"],
+            "span_entity_precision": entity_metrics["entity_precision"],
+            "span_entity_recall": entity_metrics["entity_recall"],
+            "span_entity_f1": entity_metrics["entity_f1"],
             "token_accuracy": token_accuracy,
         }
 
@@ -312,8 +325,12 @@ class Trainer:
 
             save_json(metrics, metrics_dir / f"{split}_metrics.json")
             save_json(
-                entity_metrics["entity_report"],
+                nermud_metrics["nermud_report"],
                 metrics_dir / f"{split}_classification_report.json",
+            )
+            save_json(
+                entity_metrics["entity_report"],
+                metrics_dir / f"{split}_span_classification_report.json",
             )
 
             save_predictions_tsv(

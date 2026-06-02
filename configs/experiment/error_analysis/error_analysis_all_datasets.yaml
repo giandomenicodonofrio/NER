@@ -1,7 +1,9 @@
+# Snapshot used to export predictions for error analysis.
+# The selected generalist experiment lives under configs/experiment/post_tuning.
 experiment:
-  name: final_all_datasets
+  name: error_analysis_all_datasets
   seed: 42
-  output_dir: outputs/final/final_all_datasets
+  output_dir: outputs/error_analysis/error_analysis_all_datasets
 
 model_config: configs/model/final_charcnn_bilstm_crf.yaml
 embedding_config: configs/embeddings/final_nlpl_word2vec_it.yaml

@@ -5,7 +5,7 @@ import pandas as pd
 
 
 EXPERIMENTS = {
-    "random": Path("outputs/final/final_all_datasets"),
+    "random": Path("outputs/error_analysis/error_analysis_all_datasets"),
     "balanced": Path("outputs/balancing/all_balanced_sampling"),
 }
 
